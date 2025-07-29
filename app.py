@@ -5,7 +5,6 @@ import json
 from bs4 import BeautifulSoup
 from deep_translator import GoogleTranslator
 
-# Konfigurasi
 BOT_TOKEN = '8420493182:AAFT69h6guoysRP5u46ZkKDQc2_f7DGdnX4'
 CHAT_ID = '-1002490501639'
 
@@ -25,12 +24,10 @@ def bersihin_html(raw_html):
 @app.route('/wp-webhook', methods=['POST'])
 def wp_hook():
     data = request.json
-
     post_type = data.get('post_type')
     if post_type not in ['movies', 'tvshows']:
         return 'Skip', 200
 
-    # Ambil data dari payload WP
     title = html.escape(data.get('title', 'Tanpa Judul'))
     link = data.get('link', '#')
     content_raw = data.get('content', '')
@@ -40,11 +37,9 @@ def wp_hook():
     genres = ', '.join(tax.get('genres', []))
     cast = ', '.join(tax.get('dtcast', []))
 
-    # Bersihkan dan translate sinopsis
     sinopsis = bersihin_html(content_raw)
     sinopsis_indo = translate_to_indo(sinopsis)
 
-    # Format caption pesan
     caption = f"""🎬 <b>{title}</b>
 
 🎭 <b>Genre:</b> {html.escape(genres)}
@@ -54,21 +49,28 @@ def wp_hook():
 {html.escape(sinopsis_indo)}
 """
 
-    # Inline button "Tonton Sekarang"
     reply_markup = {
         "inline_keyboard": [
             [{"text": "▶️ Tonton Sekarang", "url": link}]
         ]
     }
 
-    # Kirim ke Telegram
-    res = requests.post(f'https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto', data={
-        'chat_id': CHAT_ID,
-        'photo': featured_image,
-        'caption': caption,
-        'parse_mode': 'HTML',
-        'reply_markup': json.dumps(reply_markup)
-    })
+    if not featured_image or not featured_image.startswith("http"):
+        print("⚠️ featured_image tidak valid, kirim tanpa foto.")
+        res = requests.post(f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage', data={
+            'chat_id': CHAT_ID,
+            'text': caption,
+            'parse_mode': 'HTML',
+            'reply_markup': json.dumps(reply_markup)
+        })
+    else:
+        res = requests.post(f'https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto', data={
+            'chat_id': CHAT_ID,
+            'photo': featured_image,
+            'caption': caption,
+            'parse_mode': 'HTML',
+            'reply_markup': json.dumps(reply_markup)
+        })
 
     if res.status_code == 200:
         return 'Terkirim', 200
