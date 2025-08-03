@@ -5,7 +5,7 @@ import json
 from bs4 import BeautifulSoup
 from deep_translator import GoogleTranslator
 
-BOT_TOKEN = '8420493182:AAFT69h6guoysRP5u46ZkKDQc2_f7DGdnX4'
+BOT_TOKEN = '8420493182:AAHbSO6RhLTScqU2eXeuEvNXc7_HP8R1pyI'
 CHAT_ID = '-1002490501639'
 
 app = Flask(__name__)
