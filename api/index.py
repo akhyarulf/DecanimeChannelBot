@@ -8,7 +8,7 @@ from deep_translator import GoogleTranslator
 
 # Token aman, bisa diatur lewat dashboard Vercel nanti
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '8420493182:AAHbSO6RhLTScqU2eXeuEvNXc7_HP8R1pyI')
-CHAT_ID = os.environ.get('CHAT_ID', '-5548222190')
+CHAT_ID = os.environ.get('CHAT_ID', '@decanimechannel')
 
 app = Flask(__name__)
 
