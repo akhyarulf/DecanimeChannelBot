@@ -306,37 +306,21 @@ def wp_hook():
 
 <b>{html.escape(title)}</b>
 
-
 <b>Genre:</b> <i>{html.escape(genres)}</i>
-
 <b>Negara:</b> <i>{html.escape(country)}</i>
-
 <b>Durasi:</b> <i>{html.escape(runtime)} Menit</i>
-
 <b>Kualitas:</b> <i>{html.escape(quality)}</i>
-
 <b>Rating:</b> <i>{html.escape(rating)}/10 {rating_source}</i>
 
-
-
 <b>Sinopsis:</b>
-
 {html.escape(synopsis)}
 
-
-
 <b>Pemain:</b>
-
 {html.escape(cast)}
-
-
 
 <a href="{link}">Streaming &amp; Download di Decanime</a>
 
-
-
 {' '.join(hashtags)}
-
 """
 
 
