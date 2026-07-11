@@ -1,7 +1,6 @@
 from flask import Flask, request
 import requests
 import html
-import json
 import os
 import re
 from bs4 import BeautifulSoup
@@ -27,22 +26,19 @@ app = Flask(__name__)
 
 
 
+
 def translate_to_indo(text):
 
     if not text.strip():
-
         return "Tidak ada sinopsis."
 
 
     try:
 
-        translated = GoogleTranslator(
+        return GoogleTranslator(
             source='auto',
             target='id'
-        ).translate(text[:1000])
-
-
-        return translated
+        ).translate(text[:900])
 
 
     except:
@@ -53,15 +49,14 @@ def translate_to_indo(text):
 
 
 
-def bersihin_html(raw_html):
+def clean_html(text):
 
-    if not raw_html:
-
+    if not text:
         return ""
 
 
     soup = BeautifulSoup(
-        raw_html,
+        text,
         "html.parser"
     )
 
@@ -75,21 +70,27 @@ def bersihin_html(raw_html):
 
 
 @app.route('/wp-webhook', methods=['POST'])
+
 def wp_hook():
+
 
 
     data = request.json
 
 
+
     if not data:
 
-        return "Empty Payload",400
+        return "Empty",400
+
+
 
 
 
     post_type = data.get(
         'post_type'
     )
+
 
 
     if post_type not in [
@@ -101,6 +102,8 @@ def wp_hook():
     ]:
 
         return "Skip",200
+
+
 
 
 
@@ -141,6 +144,14 @@ def wp_hook():
     )
 
 
+    rating_source = data.get(
+        'rating_source',
+        'TMDB'
+    )
+
+
+
+
 
 
     tax = data.get(
@@ -149,10 +160,12 @@ def wp_hook():
     )
 
 
+
     genres_list = tax.get(
         'genres',
         []
     )
+
 
 
     cast_list = tax.get(
@@ -162,10 +175,17 @@ def wp_hook():
 
 
 
+    quality_list = tax.get(
+        'quality',
+        []
+    )
+
+
 
     genres = ', '.join(
         genres_list
     )
+
 
 
     cast = ', '.join(
@@ -174,44 +194,54 @@ def wp_hook():
 
 
 
+    quality = ', '.join(
+        quality_list
+    ) if quality_list else 'HD'
 
-    sinopsis = bersihin_html(
 
+
+
+
+    synopsis = clean_html(
         data.get(
             'content',
             ''
         )
-
-    )
-
-
-    sinopsis = translate_to_indo(
-        sinopsis
     )
 
 
 
+    synopsis = translate_to_indo(
+        synopsis
+    )
 
-    # Hashtag kategori
 
-    if post_type == "movies":
 
-        category = "#Movies"
+
+
+
+    if post_type == 'movies':
+
+        category = '#Movies'
 
     else:
 
-        category = "#Series"
+        category = '#Series'
+
+
 
 
 
 
     hashtags = [
 
-        "#Decanime",
+        '#Decanime',
 
         category
 
     ]
+
+
 
 
 
@@ -227,8 +257,8 @@ def wp_hook():
             '',
 
             genre.replace(
-                " ",
-                ""
+                ' ',
+                ''
             )
 
         )
@@ -237,8 +267,9 @@ def wp_hook():
         if tag:
 
             hashtags.append(
-                "#" + tag
+                '#'+tag
             )
+
 
 
 
@@ -246,22 +277,26 @@ def wp_hook():
     if country:
 
 
-        hashtags.append(
+        country_tag = re.sub(
 
-            "#" + re.sub(
+            r'[^a-zA-Z0-9]',
 
-                r'[^a-zA-Z0-9]',
+            '',
 
-                '',
-
-                country.replace(
-                    " ",
-                    ""
-                )
-
+            country.replace(
+                ' ',
+                ''
             )
 
         )
+
+
+        if country_tag:
+
+            hashtags.append(
+                '#'+country_tag
+            )
+
 
 
 
@@ -271,18 +306,34 @@ def wp_hook():
 
 <b>{html.escape(title)}</b>
 
+
 <b>Genre:</b> <i>{html.escape(genres)}</i>
+
 <b>Negara:</b> <i>{html.escape(country)}</i>
-<b>Durasi:</b> <i>{runtime} Menit</i>
-<b>Rating:</b> <i>{rating}/10 IMDb</i>
+
+<b>Durasi:</b> <i>{html.escape(runtime)} Menit</i>
+
+<b>Kualitas:</b> <i>{html.escape(quality)}</i>
+
+<b>Rating:</b> <i>{html.escape(rating)}/10 {rating_source}</i>
+
+
 
 <b>Sinopsis:</b>
-{html.escape(sinopsis)}
+
+{html.escape(synopsis)}
+
+
 
 <b>Pemain:</b>
+
 {html.escape(cast)}
 
-<a href="{link}">Streaming & Download</a>
+
+
+<a href="{link}">Streaming &amp; Download di Decanime</a>
+
+
 
 {' '.join(hashtags)}
 
@@ -290,9 +341,14 @@ def wp_hook():
 
 
 
+
+
+
     if len(caption) > 1024:
 
-        caption = caption[:1020] + "..."
+        caption = caption[:1000] + "..."
+
+
 
 
 
@@ -304,12 +360,16 @@ def wp_hook():
 
 
 
+
+
     try:
 
 
-        res = requests.post(
+        response = requests.post(
+
 
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
+
 
             data={
 
@@ -335,13 +395,13 @@ def wp_hook():
 
 
 
-        if res.ok:
+        if response.ok:
 
             return "Terkirim",200
 
 
 
-        return res.text,500
+        return response.text,500
 
 
 
