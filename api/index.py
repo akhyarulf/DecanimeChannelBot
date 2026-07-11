@@ -271,32 +271,18 @@ def wp_hook():
 
 <b>{html.escape(title)}</b>
 
-
 <b>Genre:</b> <i>{html.escape(genres)}</i>
-
 <b>Negara:</b> <i>{html.escape(country)}</i>
-
 <b>Durasi:</b> <i>{runtime} Menit</i>
-
 <b>Rating:</b> <i>{rating}/10 IMDb</i>
 
-
-
 <b>Sinopsis:</b>
-
 {html.escape(sinopsis)}
 
-
-
 <b>Pemain:</b>
-
 {html.escape(cast)}
 
-
-
 <a href="{link}">Streaming & Download</a>
-
-
 
 {' '.join(hashtags)}
 
