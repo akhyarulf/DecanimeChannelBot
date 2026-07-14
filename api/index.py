@@ -94,7 +94,7 @@ def wp_hook():
         'quality',
         []
     )
-    genres = ', '.join(
+    genres = ' • '.join(
         genres_list
     )
     cast = ', '.join(
@@ -155,7 +155,7 @@ def wp_hook():
 
 
     caption = f"""
-🎬 <b>{html.escape(title)}</b>
+<b>{html.escape(title)}</b>
 
 {html.escape(genres)}
 {html.escape(country)} • {html.escape(quality)}
