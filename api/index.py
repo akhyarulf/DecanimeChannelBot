@@ -14,7 +14,7 @@ from google import genai
 # ======================
 
 BOT_TOKEN = os.environ.get(
-    "BOT_TOKEN"
+    "3"
 )
 
 CHAT_ID = os.environ.get(
@@ -25,6 +25,9 @@ GEMINI_API_KEY = os.environ.get(
     "GEMINI_API_KEY"
 )
 
+print("BOT_TOKEN:", bool(BOT_TOKEN))
+print("CHAT_ID:", bool(CHAT_ID))
+print("GEMINI_API_KEY:", bool(GEMINI_API_KEY))
 
 # ======================
 # APP
@@ -68,7 +71,7 @@ Sinopsis:
 
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-2.5-flash",
             contents=prompt
         )
 
