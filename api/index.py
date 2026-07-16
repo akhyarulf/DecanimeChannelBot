@@ -206,11 +206,11 @@ def wp_hook():
 
 
     cast = ", ".join(
-        cast_list[:10]
+        cast_list[:20]
     )
 
 
-    if len(cast_list) > 10:
+    if len(cast_list) > 20:
 
         cast += ", dll."
 
