@@ -1,33 +1,19 @@
 from flask import Flask, request
 import requests
 import html
-import os
 import re
 
 from bs4 import BeautifulSoup
 from deep_translator import GoogleTranslator
-from google import genai
 
 
 # ======================
-# ENV
+# TELEGRAM
 # ======================
 
-BOT_TOKEN = os.environ.get(
-    "8420493182:AAHbSO6RhLTScqU2eXeuEvNXc7_HP8R1pyI"
-)
+BOT_TOKEN = "8420493182:AAHbSO6RhLTScqU2eXeuEvNXc7_HP8R1pyI"
+CHAT_ID = "@decanimechannel"
 
-CHAT_ID = os.environ.get(
-    "@decanimechannel"
-)
-
-GEMINI_API_KEY = os.environ.get(
-    "AIzaSyCHI5t01JIbpcLfJy8VRZ1I_fJ2TfqgOEw"
-)
-
-print("BOT_TOKEN:", bool(BOT_TOKEN))
-print("CHAT_ID:", bool(CHAT_ID))
-print("GEMINI_API_KEY:", bool(GEMINI_API_KEY))
 
 # ======================
 # APP
@@ -37,63 +23,22 @@ app = Flask(__name__)
 
 
 # ======================
-# GEMINI
+# CLEAN HTML
 # ======================
 
-client = genai.Client(
-    api_key=GEMINI_API_KEY
-)
+def clean_html(text):
 
+    if not text:
+        return ""
 
+    soup = BeautifulSoup(
+        text,
+        "html.parser"
+    )
 
-def summarize_synopsis(text):
-
-    if not text.strip():
-
-        return "Tidak ada sinopsis."
-
-
-    try:
-
-        prompt = f"""
-Ringkas sinopsis film berikut menjadi 2-3 kalimat.
-
-Aturan:
-- Bahasa Indonesia natural
-- Jangan spoiler
-- Pertahankan nama karakter penting
-- Fokus konflik utama
-- Jangan menambahkan informasi baru
-
-Sinopsis:
-{text}
-"""
-
-
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
-
-
-        if response.text:
-
-            return response.text.strip()
-
-
-        return text
-
-
-    except Exception as e:
-
-        print(
-            "Gemini Error:",
-            e
-        )
-
-        return text
-
-
+    return soup.get_text(
+        separator=" "
+    ).strip()
 
 
 
@@ -114,45 +59,58 @@ def translate_to_indo(text):
             source="auto",
             target="id"
         ).translate(
-            text[:900]
+            text[:1200]
         )
 
 
-    except:
+    except Exception as e:
+
+        print(
+            "Translate Error:",
+            e
+        )
 
         return text
 
 
 
-
-
 # ======================
-# CLEAN HTML
+# RINGKAS SINOPSIS
 # ======================
 
-def clean_html(text):
+def ringkas_sinopsis(text):
 
     if not text:
 
-        return ""
+        return "Tidak ada sinopsis."
 
 
-    soup = BeautifulSoup(
-        text,
-        "html.parser"
+    sentences = re.split(
+        r'(?<=[.!?])\s+',
+        text
     )
 
 
-    return soup.get_text(
-        separator="\n"
-    ).strip()
+    result = " ".join(
+        sentences[:2]
+    )
 
 
+    if len(result) > 320:
+
+        result = (
+            result[:320]
+            .rsplit(" ",1)[0]
+            + "..."
+        )
+
+
+    return result
 
 
 
 # ======================
-# WEBHOOK
+# WEBHOOK WP
 # ======================
 
 @app.route(
@@ -168,7 +126,7 @@ def wp_hook():
 
     if not data:
 
-        return "Empty",400
+        return "Empty Payload",400
 
 
 
@@ -186,7 +144,9 @@ def wp_hook():
 
 
 
-
+    # ======================
+    # DATA BASIC
+    # ======================
 
     title = data.get(
         "title",
@@ -201,12 +161,26 @@ def wp_hook():
 
 
     image = data.get(
-        "featured_image"
+        "featured_image",
+        ""
     )
 
 
+    release_date = data.get(
+        "release_date",
+        ""
+    )
 
 
+    if release_date:
+
+        title += f" ({release_date[:4]})"
+
+
+
+    # ======================
+    # TAXONOMY
+    # ======================
 
     tax = data.get(
         "taxonomies",
@@ -214,7 +188,7 @@ def wp_hook():
     )
 
 
-    genres_list = tax.get(
+    genre_list = tax.get(
         "genres",
         []
     )
@@ -226,19 +200,19 @@ def wp_hook():
     )
 
 
-
-
-
     genres = " • ".join(
-        genres_list
+        genre_list
     )
 
 
     cast = ", ".join(
-        cast_list
+        cast_list[:8]
     )
 
 
+    if len(cast_list) > 8:
+
+        cast += ", dll."
 
 
 
@@ -259,11 +233,9 @@ def wp_hook():
     )
 
 
-    synopsis = summarize_synopsis(
+    synopsis = ringkas_sinopsis(
         synopsis
     )
-
-
 
 
 
@@ -271,25 +243,18 @@ def wp_hook():
     # HASHTAG
     # ======================
 
-    category = (
-        "#Movies"
-        if post_type == "movies"
-        else "#Series"
-    )
-
-
     hashtags = [
 
         "#Decanime",
 
-        category
+        "#Movies"
+        if post_type == "movies"
+        else "#Series"
 
     ]
 
 
-
-    for genre in genres_list:
-
+    for genre in genre_list:
 
         tag = re.sub(
             r"[^a-zA-Z0-9]",
@@ -304,17 +269,21 @@ def wp_hook():
         if tag:
 
             hashtags.append(
-                "#"+tag
+                "#" + tag
             )
 
 
+
+    hashtag_text = " ".join(
+        hashtags
+    )
 
 
 
     # ======================
     # CAPTION
+    # EDIT BAGIAN INI JIKA MAU UBAH FORMAT
     # ======================
-
 
     caption = f"""
 <b>{html.escape(title)}</b>
@@ -326,22 +295,27 @@ def wp_hook():
 <b>Pemain:</b>
 {html.escape(cast)}
 
-<a href="{link}">▶️ Streaming &amp; Download di Decanime</a>
+<a href="{html.escape(link, quote=True)}">▶️ Streaming &amp; Download di Decanime</a>
 
-{' '.join(hashtags)}
+{hashtag_text}
 """
 
 
 
+    caption = caption.strip()
 
 
+
+    # Telegram max caption 1024
     if len(caption) > 1024:
 
         caption = caption[:1000] + "..."
 
 
 
-
+    # ======================
+    # SEND TELEGRAM
+    # ======================
 
     if not image:
 
@@ -349,10 +323,7 @@ def wp_hook():
 
 
 
-
-
     try:
-
 
         response = requests.post(
 
@@ -375,11 +346,9 @@ def wp_hook():
         )
 
 
-
         if response.ok:
 
-            return "Terkirim",200
-
+            return "OK",200
 
 
         return response.text,500
