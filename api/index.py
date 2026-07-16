@@ -14,15 +14,15 @@ from google import genai
 # ======================
 
 BOT_TOKEN = os.environ.get(
-    "3"
+    "8420493182:AAHbSO6RhLTScqU2eXeuEvNXc7_HP8R1pyI"
 )
 
 CHAT_ID = os.environ.get(
-    "CHAT_ID"
+    "@decanimechannel"
 )
 
 GEMINI_API_KEY = os.environ.get(
-    "GEMINI_API_KEY"
+    "AIzaSyCHI5t01JIbpcLfJy8VRZ1I_fJ2TfqgOEw"
 )
 
 print("BOT_TOKEN:", bool(BOT_TOKEN))
